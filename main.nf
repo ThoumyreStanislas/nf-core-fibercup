@@ -11,72 +11,79 @@
 
 nextflow.enable.dsl = 2
 
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    GENOME PARAMETER VALUES
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
+params.help = false
 
-// TODO nf-core: Remove this line if you don't need a FASTA file
-//   This is an example of how to use getGenomeAttribute() to fetch parameters
-//   from igenomes.config using `--genome`
-params.fasta = WorkflowMain.getGenomeAttribute(params, 'fasta')
+// Importing modules and processes
 
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    VALIDATE & PRINT PARAMETER SUMMARY
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
+include { DENOISING_MPPCA } from "./modules/nf-scil/denoising/mppca/main.nf"
+include { UTILS_EXTRACTB0 } from "../modules/nf-scil/utils/extractb0/main.nf"
+include { BETCROP_FSLBETCROP } from "./modules/nf-scil/betcrop/fslbetcrop/main.nf"
+include { PREPROC_N4 } from "./modules/nf-scil/preproc/n4/main.nf"
+include { RECONST_DTIMETRICS } from "./modules/nf-scil/reconst/dtimetrics/main.nf"
+include { RECONST_FRF } from "./modules/nf-scil/reconst/frf/main.nf"
+include { RECONST_FODF } from "./modules/nf-scil/reconst/fodf/main.nf"
+include { TRACKING_LOCALTRACKING } from "./modules/nf-scil/tracking/localtracking/main.nf"
 
-include { validateParameters; paramsHelp } from 'plugin/nf-validation'
-
-// Print help message if needed
-if (params.help) {
-    def logo = NfcoreTemplate.logo(workflow, params.monochrome_logs)
-    def citation = '\n' + WorkflowMain.citation(workflow) + '\n'
-    def String command = "nextflow run ${workflow.manifest.name} --input samplesheet.csv --genome GRCh37 -profile docker"
-    log.info logo + paramsHelp(command) + citation + NfcoreTemplate.dashedLine(params.monochrome_logs)
-    System.exit(0)
-}
-
-// Validate input parameters
-if (params.validate_params) {
-    validateParameters()
-}
-
-WorkflowMain.initialise(workflow, params, log)
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    NAMED WORKFLOW FOR PIPELINE
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-include { FIBERCUP } from './workflows/fibercup'
-
-//
-// WORKFLOW: Run main nf-core/fibercup analysis pipeline
-//
-workflow NFCORE_FIBERCUP {
-    FIBERCUP ()
-}
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    RUN ALL WORKFLOWS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-//
-// WORKFLOW: Execute a single named workflow for the pipeline
-// See: https://github.com/nf-core/rnaseq/issues/619
-//
 workflow {
-    NFCORE_FIBERCUP ()
+
+    main:
+
+        dwi_channel = Channel.fromFilePairs("$input/**/*dwi.nii.gz", size: 1, flat: true)
+            { fetch_id(it.parent, input) }
+        bval_channel = Channel.fromFilePairs("$input/**/*bval", size: 1, flat: true)
+            { fetch_id(it.parent, input) }
+        bvec_channel = Channel.fromFilePairs("$input/**/*bvec", size: 1, flat: true)
+            { fetch_id(it.parent, input) }
+
+        // ** Denoising ** //
+        DENOISING_MPPCA(dwi_channel)
+
+        // ** Extract b0 ** //
+        b0_channel = DENOISING_MPPCA.out.dwi
+            .combine(bval_channel)
+            .combine(bvec_channel)
+        UTILS_EXTRACTB0(b0_channel)
+
+         // ** Bet ** //
+        bet_channel = DENOISING_MPPCA.out.dwi
+            .combine(bval_channel)
+            .combine(bvec_channel)
+        BETCROP_FSLBETCROP(bet_channel)
+
+        // ** N4 ** //
+        n4_channel = BETCROP_FSLBETCROP.out.dwi
+            .combine(UTILS_EXTRACTB0.out.b0)
+            .combine(BETCROP_FSLBETCROP.out.mask)
+        PREPROC_N4(n4_channel)
+
+        // ** DTI ** //
+        dti_channel = PREPROC_N4.out.dwi
+            .combine(bval_channel)
+            .combine(bvec_channel)
+        RECONST_DTIMETRICS(dti_channel)
+
+        // ** FRF ** //
+        frf_channel = PREPROC_N4.out.dwi
+            .combine(bval_channel)
+            .combine(bvec_channel)
+            .combine(b0_mask_channel)
+        RECONST_FRF(frf_channel)
+
+        // ** FODF ** //
+        fodf_channel = PREPROC_N4.out.dwi
+            .combine(bval_channel)
+            .combine(bvec_channel)
+            .combine(b0_mask_channel)
+            .combine(RECONST_DTIMETRICS.out.fa)
+            .combine(RECONST_DTIMETRICS.out.md)
+            .combine(RECONST_FRF.out.frf)
+        RECONST_FODF(fodf_channel)
+
+        // ** Local Tracking ** //
+        tracking_channel = RECONST_FODF.out.fodf
+            .combine(tracking_mask_channel)
+            .combine(seed_channel)
+        TRACKING_LOCALTRACKING(tracking_channel)
+
 }
 
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    THE END
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/

@@ -22,6 +22,57 @@
                     }
                 }
             }
+        },
+        "https://github.com/scilus/nf-scil.git": {
+            "modules": {
+                "nf-scil": {
+                    "betcrop/fslbetcrop": {
+                        "branch": "main",
+                        "git_sha": "701c3dacd90d5129ac11b030dbf461b221dd6937",
+                        "installed_by": ["modules"]
+                    },
+                    "denoising/mppca": {
+                        "branch": "main",
+                        "git_sha": "98796d3551ad5c0ebf6356e375d3850e7cfc64fe",
+                        "installed_by": ["modules"]
+                    },
+                    "denoising/nlmeans": {
+                        "branch": "main",
+                        "git_sha": "c91e5d948830cfc5fc83b984060dd22bf269d81b",
+                        "installed_by": ["modules"]
+                    },
+                    "preproc/n4": {
+                        "branch": "main",
+                        "git_sha": "7eea58371b89dfe254989183fd23262e233d4653",
+                        "installed_by": ["modules"]
+                    },
+                    "reconst/dtimetrics": {
+                        "branch": "main",
+                        "git_sha": "ef9ea4fd26019062173a9bba52ca4914a4944c0c",
+                        "installed_by": ["modules"]
+                    },
+                    "reconst/fodf": {
+                        "branch": "main",
+                        "git_sha": "4c325c5be9a4f8d6a45172d5b6a9fc932c945b0f",
+                        "installed_by": ["modules"]
+                    },
+                    "reconst/frf": {
+                        "branch": "main",
+                        "git_sha": "1c1dda1aae448bc64bc738d13ddcca76ae5448c8",
+                        "installed_by": ["modules"]
+                    },
+                    "tracking/pfttracking": {
+                        "branch": "main",
+                        "git_sha": "0560d8365bdb14d3722aebbd9f3d3be3a70698bb",
+                        "installed_by": ["modules"]
+                    },
+                    "utils/extractb0": {
+                        "branch": "main",
+                        "git_sha": "6b200ce524794bd512c5590bba38c2662dce1e46",
+                        "installed_by": ["modules"]
+                    }
+                }
+            }
         }
     }
 }
