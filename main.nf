@@ -38,17 +38,17 @@ workflow {
         // ** Denoising ** //
         DENOISING_MPPCA(dwi_channel)
 
-        // ** Extract b0 ** //
-        b0_channel = DENOISING_MPPCA.out.dwi
-            .combine(bval_channel)
-            .combine(bvec_channel)
-        UTILS_EXTRACTB0(b0_channel)
-
          // ** Bet ** //
         bet_channel = DENOISING_MPPCA.out.dwi
             .combine(bval_channel)
             .combine(bvec_channel)
         BETCROP_FSLBETCROP(bet_channel)
+
+        // ** Extract b0 ** //
+        b0_channel = BETCROP_FSLBETCROP.out.dwi
+            .combine(bval_channel)
+            .combine(bvec_channel)
+        UTILS_EXTRACTB0(b0_channel)
 
         // ** N4 ** //
         n4_channel = BETCROP_FSLBETCROP.out.dwi
