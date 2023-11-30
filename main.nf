@@ -38,7 +38,7 @@ workflow {
         // ** Denoising ** //
         DENOISING_MPPCA(dwi_channel)
 
-         // ** Bet ** //
+        // ** Bet ** //
         bet_channel = DENOISING_MPPCA.out.dwi
             .combine(bval_channel)
             .combine(bvec_channel)
