@@ -49,7 +49,7 @@ process RECONST_FRF {
 
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"
-    
+
     """
     scil_compute_ssst_frf.py -h
     scil_set_response_function.py -h

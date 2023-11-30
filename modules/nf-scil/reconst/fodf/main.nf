@@ -51,11 +51,11 @@ process RECONST_FODF {
     scil_extract_dwi_shell.py $dwi $bval $bvec $fodf_shells \
         dwi_fodf.nii.gz bval_fodf bvec_fodf \
         $dwi_shell_tolerance -f
-    
+
     scil_compute_ssst_fodf.py dwi_fodf.nii.gz bval_fodf bvec_fodf $frf ${prefix}__fodf.nii.gz \
         $sh_order $sh_basis --force_b0_threshold \
         --mask $b0_mask $processes
-    
+
     scil_compute_fodf_max_in_ventricles.py ${prefix}__fodf.nii.gz $fa $md \
         --max_value_output ventricles_fodf_max_value.txt $sh_basis \
         $fa_threshold $md_threshold -f
