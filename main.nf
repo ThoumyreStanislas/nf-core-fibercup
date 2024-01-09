@@ -16,7 +16,7 @@ params.help = false
 // Importing modules and processes
 
 include { DENOISING_MPPCA } from "./modules/nf-scil/denoising/mppca/main.nf"
-include { UTILS_EXTRACTB0 } from "../modules/nf-scil/utils/extractb0/main.nf"
+include { UTILS_EXTRACTB0 } from "./modules/nf-scil/utils/extractb0/main.nf"
 include { BETCROP_FSLBETCROP } from "./modules/nf-scil/betcrop/fslbetcrop/main.nf"
 include { PREPROC_N4 } from "./modules/nf-scil/preproc/n4/main.nf"
 include { RECONST_DTIMETRICS } from "./modules/nf-scil/reconst/dtimetrics/main.nf"
@@ -38,17 +38,17 @@ workflow {
         // ** Denoising ** //
         DENOISING_MPPCA(dwi_channel)
 
-        // ** Extract b0 ** //
-        b0_channel = DENOISING_MPPCA.out.dwi
-            .combine(bval_channel)
-            .combine(bvec_channel)
-        UTILS_EXTRACTB0(b0_channel)
-
-         // ** Bet ** //
+        // ** Bet ** //
         bet_channel = DENOISING_MPPCA.out.dwi
             .combine(bval_channel)
             .combine(bvec_channel)
         BETCROP_FSLBETCROP(bet_channel)
+
+        // ** Extract b0 ** //
+        b0_channel = BETCROP_FSLBETCROP.out.dwi
+            .combine(bval_channel)
+            .combine(bvec_channel)
+        UTILS_EXTRACTB0(b0_channel)
 
         // ** N4 ** //
         n4_channel = BETCROP_FSLBETCROP.out.dwi
